@@ -1,0 +1,30 @@
+name: Seed policy proof
+on:
+  pull_request:
+    paths: [proof/seed-policy.md]
+permissions:
+  contents: read
+jobs:
+  restore:
+    runs-on: [ix, arm64, ix-flox, ix-cpu-32, ix-nef]
+    timeout-minutes: 10
+    env:
+      expected_seed: clean
+      require_memory: true
+    steps:
+      - name: Verify fork clean restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, uuid
+          fields = dict(x.split('=', 1) for x in pathlib.Path('/run/ix-runner/restore-provenance').read_text().split())
+          print(pathlib.Path('/run/ix-runner/restore-provenance').read_text(), flush=True)
+          expected = {'source': 'snapshot', 'disk': 'snapshot', 'memory': 'restored', 'restore_outcome': 'restored', 'seed_kind': 'clean'}
+          for key, value in expected.items():
+              if fields.get(key) != value:
+                  raise SystemExit(f'{key}: expected {value}, observed {fields.get(key)}')
+          uuid.UUID(fields['seed_snapshot_id']); uuid.UUID(fields['seed_holder_vm_id'])
+          print(f'run={os.environ["GITHUB_RUN_ID"]} event={os.environ["GITHUB_EVENT_NAME"]} head_repo={os.environ["GITHUB_HEAD_REPOSITORY"]}', flush=True)
+          PY
+          grep -m1 '^MemTotal:' /proc/meminfo
