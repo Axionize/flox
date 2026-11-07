@@ -10,7 +10,7 @@ on:
   push:
     branches: [ix, seed-policy-owned]
   pull_request:
-    paths: [.github/workflows/seed-policy-proof.yml]
+    paths: [.github/workflows/seed-policy-proof.yml, proof/seed-policy.md]
 
 permissions:
   contents: read
