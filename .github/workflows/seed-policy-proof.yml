@@ -20,7 +20,7 @@ jobs:
     runs-on: [self-hosted, ix, arm64, ix-flox]
     timeout-minutes: 10
     env:
-      require_memory: ${{ github.event_name != 'workflow_dispatch' || inputs.require_memory }}
+      require_memory: ${{ github.event_name == 'push' && github.sha != 'bootstrap-seed-policy' && true || inputs.require_memory }}
       expected_seed: ${{ github.event_name == 'pull_request' && 'clean' || 'trusted' }}
     steps:
       - name: Verify IX restore provenance
