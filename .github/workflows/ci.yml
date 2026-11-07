@@ -756,3 +756,30 @@ jobs:
           MATRIX_SYSTEM: ${{ matrix.system }}
           MATRIX_TEST_TAGS: ${{ matrix.test-tags }}
         run: ./.github/scripts/ix-local-integration-tests.sh
+
+  # Fork-only seed proof. It has no credentials or checkout and records the
+  # clean snapshot provenance selected for cross-repository pull requests.
+  fork-seed-policy-proof:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+    runs-on: [ix, arm64, ix-flox, ix-cpu-32, ix-nef]
+    timeout-minutes: 10
+    permissions: {}
+    steps:
+      - name: Verify clean restored RAM
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, uuid
+          path = pathlib.Path('/run/ix-runner/restore-provenance')
+          text = path.read_text()
+          fields = dict(part.split('=', 1) for part in text.split())
+          print(text, flush=True)
+          required = {'source': 'snapshot', 'disk': 'snapshot', 'memory': 'restored', 'restore_outcome': 'restored', 'seed_kind': 'clean'}
+          for key, value in required.items():
+              if fields.get(key) != value:
+                  raise SystemExit(f'{key}: expected {value}, observed {fields.get(key)}')
+          uuid.UUID(fields['seed_snapshot_id'])
+          uuid.UUID(fields['seed_holder_vm_id'])
+          print(f'run={os.environ["GITHUB_RUN_ID"]} head_repo={os.environ["GITHUB_HEAD_REPOSITORY"]}', flush=True)
+          PY
