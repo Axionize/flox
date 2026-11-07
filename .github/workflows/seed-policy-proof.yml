@@ -1,0 +1,49 @@
+name: Seed policy proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      require_memory:
+        description: Require restored RAM, or allow first seed establishment
+        type: boolean
+        default: true
+  push:
+    branches: [seed-policy-owned]
+  pull_request:
+    paths: [.github/workflows/seed-policy-proof.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    runs-on: [self-hosted, ix, arm64, ix-flox]
+    timeout-minutes: 10
+    env:
+      require_memory: ${{ github.event_name != 'workflow_dispatch' || inputs.require_memory }}
+      expected_seed: ${{ github.event_name == 'pull_request' && 'clean' || 'trusted' }}
+    steps:
+      - name: Verify IX restore provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import uuid
+          path = pathlib.Path('/run/ix-runner/restore-provenance')
+          fields = dict(part.split('=', 1) for part in path.read_text().split())
+          print(path.read_text(), flush=True)
+          if os.environ['require_memory'] == 'false' and fields.get('source') == 'image':
+              print('bootstrap=image', flush=True)
+          else:
+              required = {'source': 'snapshot', 'disk': 'snapshot', 'memory': 'restored', 'restore_outcome': 'restored', 'seed_kind': os.environ['expected_seed']}
+              for key, value in required.items():
+                  if fields.get(key) != value:
+                      raise SystemExit(f'{key}: expected {value}, observed {fields.get(key)}')
+              uuid.UUID(fields['seed_snapshot_id'])
+              uuid.UUID(fields['seed_holder_vm_id'])
+          print(f'run={os.environ["GITHUB_RUN_ID"]} event={os.environ["GITHUB_EVENT_NAME"]} ref={os.environ["GITHUB_REF"]}', flush=True)
+          PY
+          uname -a
+          grep -m1 '^MemTotal:' /proc/meminfo
