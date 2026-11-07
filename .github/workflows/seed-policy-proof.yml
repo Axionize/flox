@@ -3,7 +3,7 @@ name: Seed policy proof
 on:
   workflow_dispatch:
     inputs:
-      require_memory: ${{ github.event_name != 'push' || github.ref_name != 'ix' }}
+      require_memory:
         description: Require restored RAM, or allow first seed establishment
         type: boolean
         default: true
