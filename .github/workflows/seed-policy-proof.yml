@@ -20,7 +20,7 @@ jobs:
     runs-on: [ix, arm64, ix-flox, ix-cpu-32, ix-nef]
     timeout-minutes: 10
     env:
-      require_memory: ${{ github.sha != 'BOOTSTRAP_PLACEHOLDER' }}
+      require_memory: ${{ github.sha != '4f59a17b71aaf04e3e63bc2b2ce9b8255a5bd291' }}
       expected_seed: ${{ github.event_name == 'pull_request' && 'clean' || 'trusted' }}
     steps:
       - name: Verify IX restore provenance
