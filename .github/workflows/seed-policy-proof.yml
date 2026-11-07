@@ -24,7 +24,7 @@ jobs:
     # isolated trusted push proof
     env:
       require_memory: ${{ !contains(github.event.head_commit.message, '[seed-bootstrap]') }}
-      expected_seed: ${{ github.event_name == 'pull_request' && 'clean' || 'trusted' }}
+      expected_seed: ${{ (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && 'clean' || 'trusted' }}
     steps:
       - name: Verify IX restore provenance
         shell: bash
