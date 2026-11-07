@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   restore:
-    runs-on: [self-hosted, ix, arm64, ix-flox]
+    runs-on: [ix, arm64, ix-flox, ix-cpu-32, ix-nef]
     timeout-minutes: 10
     env:
       require_memory: true
