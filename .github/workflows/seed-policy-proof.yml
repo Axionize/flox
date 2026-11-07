@@ -8,7 +8,7 @@ on:
         type: boolean
         default: true
   push:
-    branches: [seed-policy-owned]
+    branches: [ix, seed-policy-owned]
   pull_request:
     paths: [.github/workflows/seed-policy-proof.yml]
 
