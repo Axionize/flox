@@ -1848,6 +1848,7 @@ mod tests {
         let (flox, _temp_dir_handle) = flox_instance();
         let mut environment =
             new_core_environment_from_env_files(&flox, GENERATED_DATA.join("envs/hello"));
+        let lockfile_path = environment.lockfile_path();
 
         // Make a non-formatting change to the lock
         {
@@ -1856,31 +1857,20 @@ mod tests {
             manifest.as_latest_schema_mut().options.activate.mode = Some(ActivateMode::Dev);
             lockfile.manifest = manifest.into();
             let lockfile_contents = serialize_json_with_newline(&lockfile).unwrap();
-            let lockfile_path = environment.lockfile_path();
-            let mut file = OpenOptions::new().write(true).open(lockfile_path).unwrap();
+            let mut file = OpenOptions::new().write(true).open(&lockfile_path).unwrap();
             file.write_all(lockfile_contents.as_bytes()).unwrap();
 
             // fsync metadata to ensure the mtime is updated
             file.sync_all().unwrap();
         }
 
-        let mtime_original = environment
-            .lockfile_path()
-            .metadata()
-            .unwrap()
-            .modified()
-            .unwrap();
+        let contents_before = std::fs::read(&lockfile_path).unwrap();
 
         let _ = environment.lock(&flox).unwrap();
 
-        let mtime_after = environment
-            .lockfile_path()
-            .metadata()
-            .unwrap()
-            .modified()
-            .unwrap();
+        let contents_after = std::fs::read(&lockfile_path).unwrap();
 
-        assert_ne!(mtime_after, mtime_original);
+        assert_ne!(contents_after, contents_before);
     }
 
     #[test]
